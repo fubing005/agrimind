@@ -1,0 +1,57 @@
+[project]
+name = "AgriMind"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "shalabing",email = "516051271@qq.com"},
+]
+dependencies = [
+    "fastapi[standard]>=0.136.3",
+    "uvicorn[standard]>=0.48.0",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "langgraph>=1.2.4",
+    "langchain-core>=1.4.0",
+    "langchain-openai>=1.2.2",
+    "llama-index-core>=0.14.22",
+    "llama-index-llms-openai>=0.7.9",
+    "llama-index-embeddings-openai>=0.6.0",
+    "llama-index-vector-stores-chroma>=0.5.5",
+    "chromadb>=1.5.9",
+    "tavily-python>=0.7.25",
+    "pydantic-settings>=2.14.1",
+    "httpx[http2]>=0.28.1",
+    "asyncio>=4.0.0",
+    "sqlalchemy>=2.0.0"
+]
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+markers = [
+    "unit: 纯单元测试",
+    "integration: 集成测试",
+]
+
+
+[tool.pdm]
+distribution = false
+
+[tool.fastapi]
+entrypoint = "main:app"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

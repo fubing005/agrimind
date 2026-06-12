@@ -1,0 +1,73 @@
+# ====================================================================
+# AgriMind (农知睿策) 全局核心排除项
+# ====================================================================
+
+# 敏感配置文件（保护 API Keys，如 OpenAI, Tavily 等密钥）
+.env
+.env.*
+!.env.example
+.claude/
+.codegraph/
+CLAUDE.md
+README.md.bak
+
+# 操作系统临时文件
+.DS_Store
+Thumbs.db
+
+# 各种日志文件
+*.log
+logs/
+
+# ====================================================================
+# 后端排除项 (Python / FastAPI / LlamaIndex / LangGraph)
+# ====================================================================
+
+# Python 编译文件与缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 虚拟环境 (Virtual Environments)
+.venv/
+venv/
+ENV/
+env/
+
+# LlamaIndex 本地 RAG 向量数据与索引缓存（严禁提交本地巨量索引数据）
+backend/app/rag/storage/
+backend/app/rag/chroma_db/
+backend/app/rag/qdrant_data/
+.chroma/
+*.db
+*.sqlite
+
+# ====================================================================
+# 前端排除项 (Node / Vue 3 / Vite / TypeScript)
+# ====================================================================
+
+# 依赖包目录
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# 编辑器与IDE配置缓存
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# 前端构建日志与类型缓存
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.tsbuildinfo

@@ -1,0 +1,29 @@
+# ---- 依赖 ----
+node_modules/
+
+# ---- 构建产物 ----
+dist/
+
+# ---- TypeScript 增量编译缓存 ----
+*.tsbuildinfo
+
+# ---- 环境变量（含 API 地址等，不入库） ----
+.env
+.env.local
+.env.*.local
+
+# ---- 日志 ----
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ---- IDE / 编辑器 ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- 操作系统生成 ----
+.DS_Store
+Thumbs.db

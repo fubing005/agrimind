@@ -1,0 +1,55 @@
+# ---- Python 编译产物 ----
+*.py[cod]
+*$py.class
+__pycache__/
+
+# ---- 虚拟环境与包管理 ----
+.venv/
+venv/
+env/
+.pdm-python
+pdm.lock
+*.egg-info/
+dist/
+build/
+
+# ---- 类型检查与静态分析缓存 ----
+.mypy_cache/
+.pytype/
+.pyre/
+.ruff_cache/
+
+# ---- 测试与覆盖率 ----
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ---- 环境变量与密钥（绝不入库） ----
+.env
+
+# ---- 向量数据库（ChromaDB 运行时生成） ----
+chroma_db/
+
+# ---- LlamaIndex 本地数据与缓存 ----
+data/
+storage/
+
+# ---- SQLAlchemy / SQLite 运行时数据库 ----
+*.db
+*.sqlite3
+
+# ---- 日志文件 ----
+*.log
+logs/
+
+# ---- IDE / 编辑器 ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- 操作系统生成 ----
+.DS_Store
+Thumbs.db

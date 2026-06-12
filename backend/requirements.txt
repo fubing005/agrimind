@@ -1,0 +1,29 @@
+# FastAPI 基础
+fastapi[standard]>=0.136.3
+uvicorn[standard]>=0.48.0
+pydantic>=2.13.4
+python-dotenv>=1.2.2
+pydantic-settings>=2.14.1
+sqlalchemy>=2.0.0
+
+# 智能体与流式工作流 (LangGraph)
+langgraph>=1.2.4
+langchain-core>=1.4.0
+langchain-openai>=1.2.2
+
+# 向量检索与本地 RAG (LlamaIndex)
+llama-index-core>=0.14.22
+llama-index-llms-openai>=0.7.9
+llama-index-embeddings-openai>=0.6.0
+llama-index-vector-stores-chroma>=0.5.5
+chromadb>=1.5.9
+
+# 联网搜索工具
+tavily-python>=0.7.25
+
+# 配置管理
+pydantic-settings>=2.8.0
+
+# 异步增强与其它工具
+httpx[http2]>=0.28.1
+asyncio>=4.0.0
