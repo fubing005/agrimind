@@ -8,7 +8,6 @@ __pycache__/
 venv/
 env/
 .pdm-python
-pdm.lock
 *.egg-info/
 dist/
 build/
