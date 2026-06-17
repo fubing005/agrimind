@@ -59,7 +59,7 @@ def should_trigger_web_search(query: str, local_confidence: float = 1.0) -> bool
     return keyword_triggered or confidence_triggered
 
 
-async def web_search(query: str, max_results: int = 5) -> tuple[str, list[str]]:
+async def web_search(query: str, max_results: int = 5) -> tuple[str, list[dict]]:
     """执行联网搜索
 
     使用 Tavily Search API 进行实时网络搜索，获取最新的农业资讯。
@@ -69,7 +69,7 @@ async def web_search(query: str, max_results: int = 5) -> tuple[str, list[str]]:
         max_results: 最大返回结果数
 
     Returns:
-        (搜索结果文本, 引用来源URL列表)
+        (搜索结果文本, 引用来源列表 — 每项为 {"title": ..., "url": ..., "source_type": "web"})
     """
     try:
         client = _get_tavily_client()
@@ -78,7 +78,7 @@ async def web_search(query: str, max_results: int = 5) -> tuple[str, list[str]]:
         response = client.search(
             query=query,
             max_results=max_results,
-            search_depth="advanced",  # 使用高级搜索获取更详细结果
+            search_depth="advanced",
             include_raw_content=False,
             topic="general",
         )
@@ -95,7 +95,11 @@ async def web_search(query: str, max_results: int = 5) -> tuple[str, list[str]]:
             if content:
                 context_parts.append(f"【{title}】{content}")
             if url:
-                sources.append(url)
+                sources.append({
+                    "title": title or url,
+                    "url": url,
+                    "source_type": "web",
+                })
 
         context = "---".join(context_parts) if context_parts else ""
 

@@ -119,7 +119,7 @@ def add_documents(documents: list[Document]) -> int:
     return len(documents)
 
 
-async def local_rag_search(query: str, top_k: int = 5, similarity_threshold: float = 0.6) -> tuple[str, list[str]]:
+async def local_rag_search(query: str, top_k: int = 5, similarity_threshold: float = 0.6) -> tuple[str, list[dict]]:
     """本地知识库语义检索
 
     Args:
@@ -128,7 +128,7 @@ async def local_rag_search(query: str, top_k: int = 5, similarity_threshold: flo
         similarity_threshold: 相似度阈值，低于此值的结果将被过滤
 
     Returns:
-        (检索结果文本, 引用来源列表)
+        (检索结果文本, 引用来源列表 — 每项为 {"title": ..., "url": ..., "source_type": "local"})
     """
     try:
         index = get_index()
@@ -144,6 +144,7 @@ async def local_rag_search(query: str, top_k: int = 5, similarity_threshold: flo
         # 过滤低相似度结果并拼接上下文
         context_parts = []
         sources = []
+        seen_titles = set()
         for node in nodes:
             score = node.score if node.score is not None else 0.0
             if score >= similarity_threshold:
@@ -151,13 +152,20 @@ async def local_rag_search(query: str, top_k: int = 5, similarity_threshold: flo
                 # 提取来源信息
                 metadata = node.node.metadata
                 source_name = metadata.get("filename", metadata.get("source", "本地知识库"))
-                if source_name not in sources:
-                    sources.append(source_name)
+                # 本地知识库文件暂无 HTTP 下载链接，url 留空
+                # 前端对 url 为空的来源渲染为纯文本而非超链接
+                if source_name not in seen_titles:
+                    seen_titles.add(source_name)
+                    sources.append({
+                        "title": source_name,
+                        "url": None,
+                        "source_type": "local",
+                    })
 
         context = "---".join(context_parts)
         logger.info(
             f"本地 RAG 检索完成: 查询='{query[:30]}...', "
-            f"命中={len(context_parts)}/{len(nodes)}, 来源={sources}"
+            f"命中={len(context_parts)}/{len(nodes)}, 来源数={len(sources)}"
         )
 
         return context, sources

@@ -34,7 +34,7 @@ export type ChatMessage = {
      *
      * 引用的参考文献/数据来源
      */
-    sources?: Array<string> | null;
+    sources?: Array<AppSchemasChatSourceItem> | null;
     /**
      * Skill Used
      *
@@ -299,7 +299,7 @@ export type MessageAppend = {
     /**
      * Sources
      */
-    sources?: Array<string> | null;
+    sources?: Array<SourceItemInput> | null;
     /**
      * Skill Used
      */
@@ -338,7 +338,7 @@ export type MessageItem = {
      *
      * 引用的参考文献/数据来源（仅 assistant 消息）
      */
-    sources?: Array<string> | null;
+    sources?: Array<AppSchemasSessionSourceItem> | null;
     /**
      * Skill Used
      *
@@ -353,6 +353,32 @@ export type MessageItem = {
  * 消息角色枚举
  */
 export type MessageRole = 'user' | 'assistant' | 'system';
+
+/**
+ * SourceItem
+ *
+ * 引用来源条目 — 与 :class:`app.schemas.chat.SourceItem` 同构
+ */
+export type SourceItemInput = {
+    /**
+     * Title
+     *
+     * 来源标题/文件名
+     */
+    title: string;
+    /**
+     * Url
+     *
+     * 来源链接（网页 URL 或本地文件路径）
+     */
+    url?: string | null;
+    /**
+     * Source Type
+     *
+     * 来源类型：web=联网搜索, local=本地知识库
+     */
+    source_type: 'web' | 'local';
+};
 
 /**
  * ValidationError
@@ -380,6 +406,60 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * SourceItem
+ *
+ * 引用来源条目
+ *
+ * 携带来源标题与可点击链接，前端可据此渲染为超链接。
+ */
+export type AppSchemasChatSourceItem = {
+    /**
+     * Title
+     *
+     * 来源标题/文件名
+     */
+    title: string;
+    /**
+     * Url
+     *
+     * 来源链接（网页 URL 或本地文件路径）
+     */
+    url?: string | null;
+    /**
+     * Source Type
+     *
+     * 来源类型：web=联网搜索, local=本地知识库
+     */
+    source_type: 'web' | 'local';
+};
+
+/**
+ * SourceItem
+ *
+ * 引用来源条目 — 与 :class:`app.schemas.chat.SourceItem` 同构
+ */
+export type AppSchemasSessionSourceItem = {
+    /**
+     * Title
+     *
+     * 来源标题/文件名
+     */
+    title: string;
+    /**
+     * Url
+     *
+     * 来源链接（网页 URL 或本地文件路径）
+     */
+    url?: string | null;
+    /**
+     * Source Type
+     *
+     * 来源类型：web=联网搜索, local=本地知识库
+     */
+    source_type: 'web' | 'local';
 };
 
 export type ChatApiV1ChatChatPostData = {

@@ -10,6 +10,8 @@ sqlalchemy>=2.0.0
 langgraph>=1.2.4
 langchain-core>=1.4.0
 langchain-openai>=1.2.2
+langgraph-checkpoint-sqlite>=3.1.0
+aiosqlite>=0.22.1
 
 # 向量检索与本地 RAG (LlamaIndex)
 llama-index-core>=0.14.22

@@ -5,7 +5,7 @@ from typing import Generator
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.agent.graph import agrimind_graph
+from app.agent.graph import get_graph
 from app.core.database import get_db
 from app.services.session_service import SessionService
 
@@ -25,7 +25,7 @@ def get_conversation_id(conversation_id: str | None = None) -> str:
 
 def get_agent_graph():
     """获取 LangGraph 工作流实例"""
-    return agrimind_graph
+    return get_graph()
 
 
 def get_session_service(db: Session = Depends(get_db)) -> SessionService:

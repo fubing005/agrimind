@@ -50,25 +50,25 @@ def _to_message_item(raw: dict) -> MessageItem:
 
 
 def _to_detail(conv: Conversation) -> ConversationDetail:
-    raw_messages = conv.messages or []
+    raw_messages: list[dict] = conv.messages or [] # type: ignore[assignment]
     messages = [_to_message_item(m) for m in raw_messages]
     return ConversationDetail(
-        id=conv.id,
-        title=conv.title,
+        id=str(conv.id),
+        title=str(conv.title),
         messages=messages,
         message_count=len(messages),
-        created_at=_ensure_dt(conv.created_at),
-        updated_at=_ensure_dt(conv.updated_at),
+        created_at=_ensure_dt(conv.created_at), # type: ignore[arg-type]
+        updated_at=_ensure_dt(conv.updated_at), # type: ignore[arg-type]
     )
 
 
 def _to_summary(conv: Conversation) -> ConversationSummary:
     return ConversationSummary(
-        id=conv.id,
-        title=conv.title,
-        message_count=len(conv.messages) if conv.messages else 0,
-        created_at=_ensure_dt(conv.created_at),
-        updated_at=_ensure_dt(conv.updated_at),
+        id=str(conv.id),
+        title=str(conv.title),
+        message_count=len(conv.messages) if conv.messages else 0, # type: ignore[assignment]
+        created_at=_ensure_dt(conv.created_at), # type: ignore[arg-type]
+        updated_at=_ensure_dt(conv.updated_at), # type: ignore[arg-type]
     )
 
 
@@ -143,8 +143,8 @@ class SessionService:
             return None
 
         if payload.title is not None:
-            row.title = payload.title
-        row.updated_at = _now()
+            row.title = payload.title # type: ignore[assignment]
+        row.updated_at = _now() # type: ignore[assignment]
         self.db.flush()
         return _to_detail(row)
 
@@ -192,10 +192,10 @@ class SessionService:
                 "skill_used": msg.skill_used,
             }
         )
-        existing = list(row.messages or [])
+        existing = list(row.messages or []) # type: ignore[assignment]
         existing.append(item.model_dump(mode="json", exclude_none=True))
-        row.messages = existing
-        row.updated_at = _now()
+        row.messages = existing # type: ignore[assignment]
+        row.updated_at = _now() # type: ignore[assignment]
         # 首条 user 消息写入后自动改写默认标题
         if msg.role == "user":
             self._auto_derive_title(row)
@@ -219,18 +219,18 @@ class SessionService:
 
     def _auto_derive_title(self, row: Conversation) -> None:
         """单行改写（不提交、不 flush），便于 ``append_message`` 复用"""
-        if row.title != "新对话":
+        if row.title != "新对话": # type: ignore[assignment]
             return
         first_user = next(
             (m for m in (row.messages or []) if m.get("role") == "user"),
             None,
         )
-        if not first_user:
+        if not first_user: # type: ignore[assignment]
             return
         content = (first_user.get("content") or "").strip()
         if not content:
             return
-        row.title = content[:20] + ("..." if len(content) > 20 else "")
+        row.title = content[:20] + ("..." if len(content) > 20 else "") # type: ignore[assignment]
 
     # ------------------------------------------------------------------
     # 删除

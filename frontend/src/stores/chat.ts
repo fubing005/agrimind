@@ -20,12 +20,19 @@ import type {
   MessageItem,
 } from "@/client/types.gen";
 
+/** 引用来源条目（UI 侧统一类型） */
+export interface SourceItem {
+  title: string;
+  url?: string | null;
+  sourceType: "web" | "local";
+}
+
 /** UI 侧消息 */
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: number;
-  sources?: string[];
+  sources?: SourceItem[];
   skillUsed?: string;
   blocked?: boolean;
 }
@@ -40,11 +47,19 @@ export interface Conversation {
 }
 
 function toChatMessage(msg: MessageItem): ChatMessage {
+  const sources: SourceItem[] | undefined = msg.sources
+    ? msg.sources.map((s) => ({
+        title: s.title,
+        url: s.url ?? null,
+        sourceType: s.source_type,
+      }))
+    : undefined;
+
   return {
     role: msg.role,
     content: msg.content,
     timestamp: msg.timestamp ? new Date(msg.timestamp).getTime() : Date.now(),
-    sources: msg.sources ?? undefined,
+    sources,
     skillUsed: msg.skill_used ?? undefined,
   };
 }
@@ -248,7 +263,7 @@ export const useChatStore = defineStore("chat", () => {
   }
 
   /** 设置最后一条 assistant 消息的 sources */
-  function setLastAssistantSources(sources: string[]): void {
+  function setLastAssistantSources(sources: SourceItem[]): void {
     const conv = getActiveConversation();
     if (!conv) return;
     const msgs = conv.messages;

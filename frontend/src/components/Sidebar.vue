@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from "vue";
+import { type ComponentPublicInstance, nextTick, ref } from "vue";
 import { useChatStore } from "@/stores/chat";
 
 const chatStore = useChatStore();
@@ -9,8 +9,12 @@ const pendingDeleteId = ref<string>("");
 const editingId = ref<string>("");
 /** 重命名输入框的值 */
 const editingTitle = ref<string>("");
-/** 输入框 DOM 引用 */
+/** 输入框 DOM 引用（函数式 ref，绕过 v-for 数组行为） */
 const editInputRef = ref<HTMLInputElement | null>(null);
+
+function setEditInput(el: Element | ComponentPublicInstance | null): void {
+  editInputRef.value = el as HTMLInputElement | null;
+}
 
 function handleNewChat(): void {
   void chatStore.createConversation();
@@ -156,7 +160,7 @@ function formatDate(value: string | number): string {
         <!-- 重命名输入框 / 标题展示 -->
         <input
           v-if="editingId === conv.id"
-          ref="editInputRef"
+          :ref="setEditInput"
           v-model="editingTitle"
           class="flex-1 min-w-0 bg-gray-600 text-white text-sm px-1.5 py-0.5 rounded border border-green-400 outline-none"
           @click.stop

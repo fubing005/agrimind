@@ -52,3 +52,5 @@ logs/
 # ---- 操作系统生成 ----
 .DS_Store
 Thumbs.db
+
+READMD.md.bak

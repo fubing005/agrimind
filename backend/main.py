@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import init_db
+from app.agent.graph import init_graph
+from app.agent.checkpointer import cleanup_checkpointer
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -15,6 +17,19 @@ app = FastAPI(
 
 # 初始化数据库
 init_db()
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    """应用启动时异步初始化 LangGraph checkpointer 与工作流。"""
+    await init_graph()
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    """应用关闭时清理 AsyncSqliteSaver 连接。"""
+    await cleanup_checkpointer()
+
 
 # CORS 中间件配置
 app.add_middleware(

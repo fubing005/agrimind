@@ -16,12 +16,13 @@ from langchain_core.messages import HumanMessage
 from sqlalchemy.orm import Session
 
 from app.agent.guardrail import GUARDRAIL_BLOCKED_MESSAGE
-from app.agent.graph import agrimind_graph
+from app.agent.graph import get_graph
 from app.agent.state import AgentState
 from app.api.deps import get_conversation_id, get_db
 from app.schemas.chat import ChatMessage, ChatRequest, ChatResponse, MessageRole
 from app.schemas.session import MessageAppend
 from app.services.session_service import SessionService
+from langchain_core.runnables import RunnableConfig
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -84,7 +85,9 @@ async def chat(
         conversation_id=conversation_id,
     )
 
-    result = await agrimind_graph.ainvoke(initial_state)
+    # thread_id 让 checkpointer 按 session 隔离/恢复记忆
+    config: RunnableConfig = {"configurable": {"thread_id": conversation_id}}
+    result = await get_graph().ainvoke(initial_state, config=config)
     _persist_exchange(service, conversation_id, request.message, result)
 
     blocked = bool(result.get("blocked"))
@@ -129,7 +132,9 @@ async def chat_stream(
                 conversation_id=conversation_id,
             )
 
-            result = await agrimind_graph.ainvoke(initial_state)
+            # thread_id 让 checkpointer 按 session 隔离/恢复记忆
+            config: RunnableConfig = {"configurable": {"thread_id": conversation_id}}
+            result = await get_graph().ainvoke(initial_state, config=config)
             # 立刻持久化这一轮问答，避免 SSE 中途断流导致消息丢失
             _persist_exchange(service, conversation_id, request.message, result)
 
@@ -141,8 +146,9 @@ async def chat_stream(
             final_answer = result.get("final_answer") or ""
             sources = result.get("sources") or []
 
-            # 流式输出回答内容（模拟逐字输出）
-            chunk_size = 4  # 每次输出的字符数
+            # 流式输出回答内容（按段落/行 chunk，保留 markdown 结构完整性）
+            # 以换行符为切分点，避免在 markdown 标记（如 ** 或 # ）中间截断
+            chunk_size = 8  # 每次输出的字符数
             for i in range(0, len(final_answer), chunk_size):
                 chunk = final_answer[i : i + chunk_size]
                 yield _format_sse("message", chunk)
@@ -180,6 +186,9 @@ def _format_sse(event: str, data: str) -> str:
 
     SSE 规范要求：
     - ``event:`` 和 ``data:`` 必须各自独占一行
+    - 若 ``data`` 包含换行符，每一行都必须带 ``data:`` 前缀
     - 事件块之间以空行（``\\n\\n``）分隔
     """
-    return f"event: {event}\ndata: {data}\n\n"
+    # 将 data 中的每一行都加上 "data: " 前缀，符合 SSE 规范
+    data_lines = "".join(f"data: {line}\n" for line in data.split("\n"))
+    return f"event: {event}\n{data_lines}\n"

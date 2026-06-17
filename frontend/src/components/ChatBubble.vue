@@ -86,13 +86,23 @@ const renderedContent = computed(() => {
       </div>
 
       <!-- 来源引用 -->
-      <div v-if="message.sources && message.sources.length > 0" class="mt-1.5 text-xs text-gray-400 max-w-full">
-        <span>来源：</span>
-        <span v-for="(src, i) in message.sources" :key="i">
-          <a v-if="src.startsWith('http')" :href="src" target="_blank" class="text-green-600 hover:underline truncate inline-block max-w-[200px] align-bottom">{{ src }}</a>
-          <span v-else>{{ src }}</span>
-          <span v-if="i < message.sources!.length - 1">、</span>
-        </span>
+      <div v-if="message.sources && message.sources.length > 0" class="mt-1.5 text-xs max-w-full">
+        <div class="flex flex-wrap items-center gap-1 text-gray-400">
+          <span>参考文献：</span>
+        </div>
+        <ul class="mt-0.5 space-y-0.5">
+          <li v-for="(src, i) in message.sources" :key="i" class="flex items-start gap-1 text-gray-500">
+            <span class="flex-shrink-0 mt-0.5">{{ src.sourceType === "web" ? "🌐" : "📄" }}</span>
+            <a
+              v-if="src.url"
+              :href="src.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-green-600 hover:text-green-700 hover:underline break-all"
+            >{{ src.title }}</a>
+            <span v-else class="text-gray-500 break-all">{{ src.title }}</span>
+          </li>
+        </ul>
       </div>
 
       <!-- 时间 -->

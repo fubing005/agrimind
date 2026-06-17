@@ -41,9 +41,14 @@ env/
 backend/app/rag/storage/
 backend/app/rag/chroma_db/
 backend/app/rag/qdrant_data/
+chroma_db/
 .chroma/
 *.db
 *.sqlite
+
+# 项目打包产物（构建/分发产生，禁止入库）
+AgriMind.tar.gz
+*.tar.gz
 
 # ====================================================================
 # 前端排除项 (Node / Vue 3 / Vite / TypeScript)

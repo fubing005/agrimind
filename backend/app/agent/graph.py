@@ -12,12 +12,14 @@
 9. generate — 最终回答生成
 """
 import logging
+from typing import Optional
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
 
 from app.core.config import settings
+from app.agent.checkpointer import get_checkpointer, ensure_checkpointer
 from app.agent.state import AgentState
 from app.agent.guardrail import guardrail_node, GUARDRAIL_BLOCKED_MESSAGE
 from app.agent.rag.local_rag import local_rag_search
@@ -98,6 +100,8 @@ def _skill_router_decision(state: AgentState) -> str:
 async def pest_expert_node(state: AgentState) -> dict:
     """病虫害智能诊断节点
 
+    先执行 RAG 检索与联网搜索收集来源，再调用技能生成诊断结果。
+
     Args:
         state: 当前智能体状态
 
@@ -107,22 +111,42 @@ async def pest_expert_node(state: AgentState) -> dict:
     if state.blocked:
         return {}
 
+    # 技能路径绕过了 RAG 管道，需自行检索
+    local_context, local_sources = await local_rag_search(state.user_input)
+    all_sources = list(local_sources)
+
+    # 计算本地检索置信度
+    local_confidence = 0.0
+    if local_context:
+        local_confidence = min(1.0, len(local_context) / 500)
+
+    # 按需联网搜索
+    web_context = ""
+    if should_trigger_web_search(state.user_input, local_confidence):
+        web_context, web_sources = await web_search(state.user_input)
+        all_sources = all_sources + web_sources
+
     result = await pest_expert_skill(
         query=state.user_input,
-        local_context=state.local_rag_context or "",
-        web_context=state.web_search_context or "",
+        local_context=local_context,
+        web_context=web_context,
     )
 
-    logger.info("病虫害诊断节点: 完成")
+    logger.info(f"病虫害诊断节点: 完成, 来源数={len(all_sources)}")
     return {
         "active_skill": "pest_expert",
         "skill_output": result,
+        "local_rag_context": local_context if local_context else None,
+        "web_search_context": web_context if web_context else None,
+        "sources": all_sources,
     }
 
 
 async def fertilizer_calc_node(state: AgentState) -> dict:
     """精准施肥决策节点
 
+    先执行 RAG 检索与联网搜索收集来源，再调用技能生成施肥方案。
+
     Args:
         state: 当前智能体状态
 
@@ -132,22 +156,43 @@ async def fertilizer_calc_node(state: AgentState) -> dict:
     if state.blocked:
         return {}
 
+    # 技能路径绕过了 RAG 管道，需自行检索
+    local_context, local_sources = await local_rag_search(state.user_input)
+    all_sources = list(local_sources)
+
+    # 计算本地检索置信度
+    local_confidence = 0.0
+    if local_context:
+        local_confidence = min(1.0, len(local_context) / 500)
+
+    # 按需联网搜索
+    web_context = ""
+    if should_trigger_web_search(state.user_input, local_confidence):
+        web_context, web_sources = await web_search(state.user_input)
+        all_sources = all_sources + web_sources
+
     result = await fertilizer_calc_skill(
         query=state.user_input,
-        local_context=state.local_rag_context or "",
-        web_context=state.web_search_context or "",
+        local_context=local_context,
+        web_context=web_context,
     )
 
-    logger.info("施肥决策节点: 完成")
+    logger.info(f"施肥决策节点: 完成, 来源数={len(all_sources)}")
     return {
         "active_skill": "fertilizer_calc",
         "skill_output": result,
+        "local_rag_context": local_context if local_context else None,
+        "web_search_context": web_context if web_context else None,
+        "sources": all_sources,
     }
 
 
 async def market_analyzer_node(state: AgentState) -> dict:
     """农产品行情分析节点
 
+    先执行本地 RAG 检索收集来源（market_analyzer 技能内部自行联网搜索），
+    再调用技能生成行情分析结果。
+
     Args:
         state: 当前智能体状态
 
@@ -157,16 +202,29 @@ async def market_analyzer_node(state: AgentState) -> dict:
     if state.blocked:
         return {}
 
+    # 本地 RAG 检索
+    local_context, local_sources = await local_rag_search(state.user_input)
+    all_sources = list(local_sources)
+
     result = await market_analyzer_skill(
         query=state.user_input,
-        local_context=state.local_rag_context or "",
+        local_context=local_context,
     )
 
-    # market_analyzer 内部已做联网搜索，合并来源
-    logger.info("行情分析节点: 完成")
+    # market_analyzer 内部已做联网搜索，但来源附加在其文本中；
+    # 额外做一次联网搜索以获取结构化来源用于前端展示
+    web_context, web_sources = await web_search(
+        query=f"农产品市场行情 {state.user_input} 最新价格走势",
+    )
+    all_sources = all_sources + web_sources
+
+    logger.info(f"行情分析节点: 完成, 来源数={len(all_sources)}")
     return {
         "active_skill": "market_analyzer",
         "skill_output": result,
+        "local_rag_context": local_context if local_context else None,
+        "web_search_context": web_context if web_context else None,
+        "sources": all_sources,
     }
 
 
@@ -279,6 +337,12 @@ async def generate_node(state: AgentState) -> dict:
     # 收集引用来源
     sources = list(state.sources) if state.sources else []
 
+    # 为 LLM 构建来源摘要文本（纯文本，不含 markdown 链接）
+    source_summaries = []
+    for src in sources:
+        label = src.get("title", "未知来源")
+        source_summaries.append(label)
+
     try:
         llm = ChatOpenAI(
             api_key=SecretStr(settings.OPENAI_API_KEY),
@@ -297,18 +361,25 @@ async def generate_node(state: AgentState) -> dict:
 
         # 添加当前问题和上下文
         user_message = f"用户问题：{state.user_input}参考上下文：{context}"
-        if sources:
-            user_message += f"数据来源：{', '.join(sources)}"
+        if source_summaries:
+            user_message += f"数据来源：{', '.join(source_summaries)}"
         messages.append(HumanMessage(content=user_message))
 
         response = await llm.ainvoke(messages)
         final_answer = response.content
 
-        # 在回答末尾附加引用来源
+        # 在回答末尾附加引用来源（含可点击链接）
         if sources:
-            source_text = "---**[参考文献/数据来源]**"
+            source_text = "\n\n---\n**[参考文献/数据来源]**\n"
             for i, src in enumerate(sources, 1):
-                source_text += f"{i}. {src}"
+                title = src.get("title", "未知来源")
+                url = src.get("url")
+                source_type = src.get("source_type", "local")
+                type_label = "🌐" if source_type == "web" else "📄"
+                if url:
+                    source_text += f"{i}. {type_label} [{title}]({url})\n"
+                else:
+                    source_text += f"{i}. {type_label} {title}\n"
             final_answer += source_text
 
         return {
@@ -410,9 +481,34 @@ def build_graph() -> CompiledStateGraph:
 
     # generate → END
     graph.add_edge("generate", END)
+    
+    return graph.compile(checkpointer=get_checkpointer())
 
-    return graph.compile()
+
+# 全局工作流实例（懒初始化）
+_agrimind_graph: Optional[CompiledStateGraph] = None
 
 
-# 全局工作流实例
-agrimind_graph = build_graph()
+async def init_graph() -> CompiledStateGraph:
+    """异步初始化工作流：先确保 checkpointer 就绪，再编译图。
+
+    应在 FastAPI startup 事件中调用。
+    """
+    global _agrimind_graph
+    if _agrimind_graph is not None:
+        return _agrimind_graph
+    await ensure_checkpointer()
+    _agrimind_graph = build_graph()
+    return _agrimind_graph
+
+
+def get_graph() -> CompiledStateGraph:
+    """同步获取已初始化的工作流实例。
+
+    仅在 init_graph() 完成后调用才安全（即请求处理阶段）。
+    """
+    if _agrimind_graph is None:
+        # 兜底：若 init_graph 尚未执行，用同步方式编译
+        # 此时 sqlite 模式下 checkpointer 仍是 MemorySaver 占位
+        return build_graph()
+    return _agrimind_graph

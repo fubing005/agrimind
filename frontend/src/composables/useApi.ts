@@ -7,11 +7,12 @@
 import { createSseClient } from "@/client/core/serverSentEvents.gen";
 import type { StreamEvent } from "@/client/core/serverSentEvents.gen";
 import type { ChatRequest } from "@/client/types.gen";
+import type { SourceItem } from "@/stores/chat";
 
 /** SSE 流式回调集合 */
 export interface ChatStreamHandlers {
   onMessage: (chunk: string) => void;
-  onSources?: (sources: string[]) => void;
+  onSources?: (sources: SourceItem[]) => void;
   onDone?: (data: { conversation_id: string; skill_used?: string | null }) => void;
   onBlocked?: (message: string) => void;
   onError?: (error: string) => void;
@@ -79,12 +80,17 @@ function dispatchSseEvent(
       break;
     case "sources":
       try {
-        const sources: string[] =
+        const rawSources: Array<{ title: string; url?: string | null; source_type: "web" | "local" }> =
           typeof raw === "string"
-            ? (JSON.parse(raw) as string[])
+            ? (JSON.parse(raw) as Array<{ title: string; url?: string | null; source_type: "web" | "local" }>)
             : Array.isArray(raw)
-              ? (raw as string[])
+              ? (raw as Array<{ title: string; url?: string | null; source_type: "web" | "local" }>)
               : [];
+        const sources: SourceItem[] = rawSources.map((s) => ({
+          title: s.title,
+          url: s.url ?? null,
+          sourceType: s.source_type,
+        }));
         handlers.onSources?.(sources);
       } catch { /* 解析失败忽略 */ }
       break;

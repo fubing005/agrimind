@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
 
     # 数据库配置
-    DATABASE_URL: str = "sqlite:///./agrimind.db"
+    DATABASE_URL: str = "sqlite:///data/agrimind.db"
 
     # LlamaIndex / ChromaDB 配置
     CHROMA_PERSIST_DIR: str = "./chroma_db"
@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # 边界拦截器配置
     GUARDRAIL_MAX_RETRIES: int = 1
     GUARDRAIL_TEMPERATURE: float = 0.0
+
+    # LangGraph Checkpointer 配置
+    # - "memory" : MemorySaver，进程内存，演示/测试用
+    # - "sqlite" : SqliteSaver，与 session 业务库共用 DATABASE_URL 指向的 sqlite 文件
+    CHECKPOINTER_BACKEND: str = "sqlite"
 
     model_config = {
         "env_file": ".env",

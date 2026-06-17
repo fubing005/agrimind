@@ -115,12 +115,17 @@ async def market_analyzer_skill(
 
         response = await llm.ainvoke(messages)
 
-        # 附加数据来源
+        # 附加数据来源（含可点击链接）
         result = response.content
         if web_sources:
-            result += "---**[行情数据来源]**"
+            result += "\n\n---\n**[行情数据来源]**\n"
             for i, src in enumerate(web_sources, 1):
-                result += f"{i}. {src}"
+                title = src.get("title", "未知来源") if isinstance(src, dict) else str(src)
+                url = src.get("url") if isinstance(src, dict) else None
+                if url:
+                    result += f"{i}. 🌐 [{title}]({url})\n"
+                else:
+                    result += f"{i}. 🌐 {title}\n"
 
         logger.info(f"行情分析完成: 查询='{query[:30]}...', 数据来源={len(web_sources)}个")
         return str(result)

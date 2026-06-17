@@ -5,9 +5,20 @@
 ``Conversation.messages`` JSON 一致。
 """
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
+
+
+# ---------------------------------------------------------------------------
+# 引用来源
+# ---------------------------------------------------------------------------
+class SourceItem(BaseModel):
+    """引用来源条目 — 与 :class:`app.schemas.chat.SourceItem` 同构"""
+
+    title: str = Field(description="来源标题/文件名")
+    url: Optional[str] = Field(default=None, description="来源链接（网页 URL 或本地文件路径）")
+    source_type: Literal["web", "local"] = Field(description="来源类型：web=联网搜索, local=本地知识库")
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +43,7 @@ class MessageItem(BaseModel):
         default=None,
         description="消息时间戳（UTC）。未提供时由服务端填充。",
     )
-    sources: Optional[List[str]] = Field(
+    sources: Optional[List[SourceItem]] = Field(
         default=None,
         description="引用的参考文献/数据来源（仅 assistant 消息）",
     )
@@ -51,7 +62,10 @@ class MessageItem(BaseModel):
                 {
                     "role": "assistant",
                     "content": "针对稻飞虱的防治，建议采取以下措施...",
-                    "sources": ["《病虫害防治指南》p.45", "中国农业网"],
+                    "sources": [
+                        {"title": "《病虫害防治指南》p.45", "url": None, "source_type": "local"},
+                        {"title": "中国农业网", "url": "https://www.farmer.com.cn/article/123", "source_type": "web"},
+                    ],
                     "skill_used": "pest_expert",
                 },
             ]
@@ -65,7 +79,7 @@ class MessageAppend(BaseModel):
     role: Literal["user", "assistant", "system"]
     content: str = Field(min_length=1, max_length=8000)
     timestamp: Optional[datetime] = None
-    sources: Optional[List[str]] = None
+    sources: Optional[List[SourceItem]] = None
     skill_used: Optional[str] = None
 
 
@@ -151,7 +165,9 @@ class ConversationDetail(BaseModel):
                         {
                             "role": "assistant",
                             "content": "针对稻飞虱的防治，建议采取以下措施...",
-                            "sources": ["《病虫害防治指南》p.45"],
+                            "sources": [
+                                {"title": "《病虫害防治指南》p.45", "url": None, "source_type": "local"},
+                            ],
                             "skill_used": "pest_expert",
                         },
                     ],

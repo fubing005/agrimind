@@ -1,8 +1,35 @@
 """对话相关的 Pydantic 数据校验模型"""
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from enum import Enum
+
+
+class SourceItem(BaseModel):
+    """引用来源条目
+
+    携带来源标题与可点击链接，前端可据此渲染为超链接。
+    """
+
+    title: str = Field(
+        description="来源标题/文件名",
+    )
+    url: Optional[str] = Field(
+        default=None,
+        description="来源链接（网页 URL 或本地文件路径）",
+    )
+    source_type: Literal["web", "local"] = Field(
+        description="来源类型：web=联网搜索, local=本地知识库",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"title": "中国农业网-稻飞虱防治", "url": "https://example.com/article", "source_type": "web"},
+                {"title": "病虫害防治指南.pdf", "url": None, "source_type": "local"},
+            ]
+        }
+    }
 
 
 class MessageRole(str, Enum):
@@ -62,7 +89,7 @@ class ChatMessage(BaseModel):
     role: MessageRole
     content: str
     timestamp: datetime = Field(default_factory=datetime.now)
-    sources: Optional[list[str]] = Field(
+    sources: Optional[list[SourceItem]] = Field(
         default=None,
         description="引用的参考文献/数据来源",
     )
@@ -86,7 +113,10 @@ class ChatResponse(BaseModel):
                     "message": {
                         "role": "assistant",
                         "content": "针对稻飞虱的防治，建议采取以下措施...",
-                        "sources": ["《病虫害防治指南》p.45", "中国农业网"],
+                        "sources": [
+                        {"title": "《病虫害防治指南》p.45", "url": None, "source_type": "local"},
+                        {"title": "中国农业网", "url": "https://www.farmer.com.cn/article/123", "source_type": "web"},
+                    ],
                         "skill_used": "pest_expert",
                     },
                     "blocked": False,

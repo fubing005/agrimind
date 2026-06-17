@@ -73,9 +73,9 @@ class AgentState(BaseModel):
     )
 
     # 引用来源
-    sources: list[str] = Field(
+    sources: list[dict] = Field(
         default_factory=list,
-        description="引用的参考文献/数据来源",
+        description="引用的参考文献/数据来源 — 每项含 title, url, source_type",
     )
 
     model_config = {"arbitrary_types_allowed": True}
