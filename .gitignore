@@ -8,6 +8,7 @@
 !.env.example
 .claude/
 .codegraph/
+.understand-anything/
 CLAUDE.md
 README.md.bak
 
